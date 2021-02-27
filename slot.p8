@@ -4,22 +4,33 @@ __lua__
 --main
 
 function _init()
+
  slots = {
 		s1 = slot:new(38,1),
 		s2 = slot:new(56,1),
 		s3 = slot:new(74,1)
 	}
-
+	
+ game:init()
  bg:init()
+ lever:init()
+ money:init()
+ 
+ debug:init()
 end
 
 function _update()
 
 	game:update()
+	
  lever:update()
  for k,v in pairs(slots) do
   v:update()
  end
+ 
+ money:update()
+ 
+ debug:update()
 end
 
 
@@ -31,10 +42,10 @@ function _draw()
  end
  
  bg:draw()
- 
  lever:draw()
+ money:draw()
  
--- debug:draw()
+ debug:draw()
 end
 -->8
 --slot
@@ -64,17 +75,27 @@ function slot:new(_x, _spridx)
 	self.maxdy = 10
  self.spridx = _spridx 
  self.isrolling = false
+ -- iswaitingforresult
+ self.iswaiting = false
+ 
+ self.gotresult=false
+ 
  setmetatable(self, slot)
  return self
 end
 
 function slot:start()
  self.isrolling = true
+ self.gotresult=false
 end
 
 function slot:stop()
  self.isrolling = false
+ self.iswaiting = true
+ 
+ y1dsc=flrex(self.y,16)
 end
+
 function slot:update()
 
 	if self.isrolling == false then
@@ -100,10 +121,24 @@ function slot:update()
   end
 	
 	end
-	
+
  self.y = self.y + self.dy
  self.y2 = self.y2 + self.dy
 
+	if not self.isrolling and
+	       self.iswaiting then
+	 -- align slot
+  if self.y~=y1dsc then
+	  self.y = flr(self.y + 1)
+	  self.y2 = flr(self.y2 + 1)
+	 else
+ 	 printh('result: '..self.y)
+	  self.iswaiting=false
+	  self.getresult()
+	 end
+	 
+	end
+	
  if	self.y > yend then
 	 self.y = ystart
  end
@@ -133,73 +168,100 @@ function slot:draw()
 	     2,2)
 	end
 
---	for i=1,7 do
---		sspr(-8+16*i, 0, 16, 16,
---	      self.x-16,
---	      self.y-sh+sh*i,
---	      sw, sh)
---	end
---
---	for i=1,7 do
---		sspr(-8+16*i, 0, 16, 16,
---	      self.x2-16,
---	      self.y2-sh+sh*i,
---	      sw, sh)
---	end
-
 end
 
+function slot:getresult()
+ if self.gotresult then
+  return
+ end
+
+ self.gotresult=true
+ 
+ -- get 3 points, get flag
+ checkx=self.x+6
+ 
+ checky={}
+ for i=0,4 do
+  checky[i+1]=20+i*16
+ end
+ 
+-- checky1=20
+-- checky2=60
+-- checky3=90
+-- checky4=90
+-- checky5=90
+ 
+ r1=fget(self.x, checky[1])
+ r2=fget(self.x, checky[2])
+ r3=fget(self.x, checky[3])
+ r4=fget(self.x, checky[4])
+ r5=fget(self.x, checky[5])
+ 
+ printh('r1: '..r1)
+ printh('r2: '..r2)
+ printh('r3: '..r3)
+ printh('r4: '..r4)
+ printh('r5: '..r5)
+ 
+end
 -->8
 --game
 
-state = {}
 game = {}
-
 started = false
 phase = 'end'
-
 pressed = false
 
-money = 100
-
 function game:init()
-
+ 
 end
 
 function game:update()
 
+-- printh('game update phase: '..game.phase..' '..time())
+
  if not btn(4) then
   pressed = false
+--  printh('not btn4')
  end
 
  if btn(4) then
-  
+--  printh('btn4 1')  
   if pressed == true then
    return
   end
   
+--  printh('btn4 2')
   pressed = true
   
-  if started == false then
+  if not started then
+   printh('game start')
 	  started = true
 	  phase = '1'
 	  for k,v in pairs(slots) do
-	   --todo: start in order
 				v:start()
 	  end
-	 
-	 elseif phase == '1' then
+
+  elseif phase == '1' then
+   printh('game 1')
 	  slots.s1:stop()
 	  phase = '2'
 	 elseif phase == '2' then
+   printh('game 2')
 	  slots.s2:stop()
 	  phase = '3'
 	 
 	 elseif phase == '3' then
+   printh('game 3')
 	  slots.s3:stop()
 	  phase = 'end'
 	  started = false
-	 end
+	 end	 
+	 
+
+	 
+	
+	 
  end 
 
 end
@@ -266,15 +328,69 @@ end
 
 debug={}
 function debug:init()
-
+ printh("----------")
+ printh("debug:init")
+ printh("----------")
+-- testmod()
 end
 
 function debug:update()
+-- adjustslot()
 
 end
 
-function debug:draw()
+function adjustslot()
+ if btnp(0) then
+  slots.s1.y -= 1
+ end
  
+ if btnp(1) then
+  slots.s1.y += 1 
+ end
+
+ if btnp(2) then
+  slots.s2.y -= 1
+ end
+ 
+ if btnp(3) then
+  slots.s2.y += 1 
+ end
+end
+
+function debug:draw()
+-- testslot()
+testslotpos()
+  
+end
+
+function testslotpos()
+	x1=44
+	y1=20
+ cursor(x1, y1)
+ print('0',x1,y1,0)
+
+	x1=44
+	y1=36		
+ cursor(x1, y1)
+ print('1',x1,y1,0)
+
+	x1=44
+	y1=52		
+ cursor(x1, y1)
+ print('2',x1,y1,0)  
+
+	x1=44
+	y1=68		
+ cursor(x1, y1)
+ print('3',x1,y1,0)
+
+	x1=44
+	y1=84		
+ cursor(x1, y1)
+ print('4',x1,y1,0)
+end
+
+function testslot()
  s1y=slots.s1.y
  s1y2=slots.s1.y2
  
@@ -290,39 +406,68 @@ function debug:draw()
 
  d3=s3y2-s3y
 
-	print("s1y : "..s1y, 10, 10)
-	print("s1y2: "..s1y2, 10, 20)
+	print("s1y : "..s1y, 0, 0)
+	print("s1y2: "..s1y2, 0, 10)
 	
-	print("d1: "..d1, 10, 30)
+	print("d1: "..d1, 0, 20)
 	
-	print("s2y : "..s2y, 10, 40)
-	print("s2y2: "..s2y2, 10, 50)
+	print("s2y : "..s2y, 0, 30)
+	print("s2y2: "..s2y2, 0, 40)
 
-	print("d2: "..d2, 10, 60)
+	print("d2: "..d2, 0, 50)
 	
-	print("s3y : "..s3y, 10, 70)
-	print("s3y2: "..s3y2, 10, 80)
+	print("s3y : "..s3y, 0, 60)
+	print("s3y2: "..s3y2, 0, 70)
 
-	print("d3: "..d3, 10, 90)
+	print("d3: "..d3, 0, 80)
+
+ print("flr s1y: "..flr(s1y), 
+ 0, 90, 0)
+ 
+ mod=flr(s1y) % 16
+ print("mod: "..mod,
+ 0,95,0)
+ 
+ is16= (mod~=0)
+ print(is16,
+ 0,100,0)
+end
+
+function testmod()
+	for i=0,128,0.1 do
+	 mod = flr(i%16)
+--	 mod = i%16
+	 is16=mod==0
+
+  if is16 then
+	 result=i.." is "..tostring(is16)
+	 printh(result)
+  end
+
+	end
 
 end
 -->8
 --lever
 
 lever={}
-lever.y=15
-lever.top=15
-lever.bottom=80
 
-function lever.update()
- if btn(4) then
+function lever:init()
+ lever.y=15
+ lever.top=15
+ lever.bottom=80
+end
+
+function lever:update()
+ if btn(4) and 
+    phase=='1' then
   lever.y = lever.bottom
  else
   lever.y = lever.top
  end
 end
 
-function lever.draw()
+function lever:draw()
  rectfill
   (112+6, lever.bottom+8,
    112+9, lever.y+8, 6)
@@ -330,6 +475,83 @@ function lever.draw()
   (112, lever.bottom,
    112+5, lever.bottom+16,10)
  spr(67,112,lever.y,2,2)
+end
+-->8
+-- converts anything to string, even nested tables
+function tostring(any)
+    if type(any)=="function" then 
+        return "function" 
+    end
+    if any==nil then 
+        return "nil" 
+    end
+    if type(any)=="string" then
+        return any
+    end
+    if type(any)=="boolean" then
+        if any then return "true" end
+        return "false"
+    end
+    if type(any)=="table" then
+        local str = "{ "
+        for k,v in pairs(any) do
+            str=str..tostring(k).."->"..tostring(v).." "
+        end
+        return str.."}"
+    end
+    if type(any)=="number" then
+        return ""..any
+    end
+    return "unkown" -- should never show
+end
+-->8
+--utility
+
+-- flr with num
+function flrex(num,div)
+	local q = num / div
+	q = flr(q)
+	printh("q: "..q)
+	printh("div*q: "..div*q)
+	return div*q
+end
+-->8
+--money
+
+money={}
+function money:init()
+ money.value=100
+ money.mul=1
+ money.maxmul=10
+ --current game
+ money.bet=5
+end
+
+function money:update()
+ if phase~='end' then
+  return
+ end
+
+ -- up and down
+ if btnp(2) then
+  money.mul=money.mul+1
+  if self.mul>self.maxmul then
+   money.mul=money.maxmul
+  end
+ end
+ 
+ if btnp(3) then
+  money.mul=money.mul-1
+		if money.mul<1 then
+		 money.mul=1
+		end
+ end
+ 
+end
+
+function money:draw()
+ print("money: "..money.value, 40, 100)
+ print("bet: "..money.bet*money.mul, 40, 110)
 end
 __gfx__
 00000000377777777777777211111111111111117777777777777772777777777777777777777777777777777777777777777777777777777777777700000000
@@ -347,7 +569,7 @@ __gfx__
 0000000077777888887777721111111111111111777779111977777278887888887888777777aaaa77aa77777722222200227777777b000030883b7700000000
 00000000777778888877777217777777777777717777779997777772777777888777777777aaaaa7aaa7777777722272272277777777b0000333b77700000000
 00000000777777777777777211111111111111117777777777777772777777777777777777aaa77aaa7777777777777222777777777777bbbbbb777700000000
-00000000222222222222222711111111111111112222222222222227777777777777777777777777777777777777777777777777777777777777777800000000
+00000000222222222222222711111111111111112222222222222227222222222222222722222222222222278888888888888887ccccccccccccccc800000000
 00000000cccccccccccccccc66666666666666665555555555555555000000000000000000000000000000000000000000000000000000000000000000000000
 00000000cccccc6666cccccc66666666666666665555558855555555000000000000000000000000000000000000000000000000000000000000000000000000
 00000000ccccc66666cccccc66666999966666665555888888555555000000000000000000000000000000000000000000000000000000000000000000000000
